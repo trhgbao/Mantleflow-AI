@@ -19,17 +19,17 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
     uint256 public constant CHALLENGE_PERIOD = 24 hours;
 
     enum PaymentStatus {
-        Pending,     // 0: Submitted, waiting confirmations
-        Confirmed,   // 1: Got 2/3 confirmations, in challenge period
-        Executed,    // 2: Payment executed
-        Challenged,  // 3: Under dispute
-        Rejected     // 4: Rejected by dispute resolution
+        Pending, // 0: Submitted, waiting confirmations
+        Confirmed, // 1: Got 2/3 confirmations, in challenge period
+        Executed, // 2: Payment executed
+        Challenged, // 3: Under dispute
+        Rejected // 4: Rejected by dispute resolution
     }
 
     struct Payment {
         uint256 loanId;
         uint256 amount;
-        bytes32 proofHash;         // Off-chain payment proof hash
+        bytes32 proofHash; // Off-chain payment proof hash
         address submitter;
         uint256 submittedAt;
         uint256 confirmationCount;
@@ -56,41 +56,18 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
 
     // Events
     event PaymentSubmitted(
-        uint256 indexed paymentId,
-        uint256 indexed loanId,
-        uint256 amount,
-        bytes32 proofHash,
-        address submitter
+        uint256 indexed paymentId, uint256 indexed loanId, uint256 amount, bytes32 proofHash, address submitter
     );
 
-    event PaymentConfirmed(
-        uint256 indexed paymentId,
-        address indexed oracle,
-        uint256 confirmationCount
-    );
+    event PaymentConfirmed(uint256 indexed paymentId, address indexed oracle, uint256 confirmationCount);
 
-    event PaymentReadyForExecution(
-        uint256 indexed paymentId,
-        uint256 challengeEndTime
-    );
+    event PaymentReadyForExecution(uint256 indexed paymentId, uint256 challengeEndTime);
 
-    event PaymentExecuted(
-        uint256 indexed paymentId,
-        uint256 indexed loanId,
-        uint256 amount
-    );
+    event PaymentExecuted(uint256 indexed paymentId, uint256 indexed loanId, uint256 amount);
 
-    event PaymentChallenged(
-        uint256 indexed paymentId,
-        address indexed challenger,
-        string reason
-    );
+    event PaymentChallenged(uint256 indexed paymentId, address indexed challenger, string reason);
 
-    event PaymentChallengeResolved(
-        uint256 indexed paymentId,
-        bool accepted,
-        string resolution
-    );
+    event PaymentChallengeResolved(uint256 indexed paymentId, bool accepted, string resolution);
 
     event OracleNodeAdded(address indexed node);
     event OracleNodeRemoved(address indexed node);
@@ -147,19 +124,14 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
      * @param amount Payment amount
      * @param proofHash Hash of off-chain payment proof
      */
-    function submitPayment(
-        uint256 loanId,
-        uint256 amount,
-        bytes32 proofHash
-    ) external nonReentrant returns (uint256) {
+    function submitPayment(uint256 loanId, uint256 amount, bytes32 proofHash) external nonReentrant returns (uint256) {
         require(amount > 0, "Amount must be positive");
         require(proofHash != bytes32(0), "Invalid proof hash");
 
         // Verify loan exists and is active/overdue
         LendingPool.Loan memory loan = lendingPool.getLoan(loanId);
         require(
-            loan.status == LendingPool.LoanStatus.Active ||
-            loan.status == LendingPool.LoanStatus.Overdue,
+            loan.status == LendingPool.LoanStatus.Active || loan.status == LendingPool.LoanStatus.Overdue,
             "Loan not active/overdue"
         );
 
@@ -247,12 +219,8 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
 
         payment.status = PaymentStatus.Challenged;
 
-        paymentChallenges[paymentId] = PaymentChallenge({
-            challenger: msg.sender,
-            reason: reason,
-            createdAt: block.timestamp,
-            resolved: false
-        });
+        paymentChallenges[paymentId] =
+            PaymentChallenge({challenger: msg.sender, reason: reason, createdAt: block.timestamp, resolved: false});
 
         emit PaymentChallenged(paymentId, msg.sender, reason);
     }
@@ -263,11 +231,10 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
      * @param accepted Whether challenge is accepted
      * @param resolution Resolution details
      */
-    function resolvePaymentChallenge(
-        uint256 paymentId,
-        bool accepted,
-        string calldata resolution
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function resolvePaymentChallenge(uint256 paymentId, bool accepted, string calldata resolution)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         Payment storage payment = payments[paymentId];
         require(payment.status == PaymentStatus.Challenged, "Not challenged");
 
@@ -334,7 +301,6 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
      */
     function isInChallengePeriod(uint256 paymentId) external view returns (bool) {
         Payment memory payment = payments[paymentId];
-        return payment.status == PaymentStatus.Confirmed &&
-               block.timestamp < payment.challengeEndTime;
+        return payment.status == PaymentStatus.Confirmed && block.timestamp < payment.challengeEndTime;
     }
 }

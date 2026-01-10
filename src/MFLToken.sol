@@ -15,14 +15,14 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 contract MFLToken is ERC20, ERC20Burnable, ERC20Permit, ERC20Votes, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    uint256 public constant MAX_SUPPLY = 100_000_000 * 10**18; // 100M tokens
+    uint256 public constant MAX_SUPPLY = 100_000_000 * 10 ** 18; // 100M tokens
 
     constructor() ERC20("MantleFlow", "MFL") ERC20Permit("MantleFlow") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
 
         // Initial distribution: 10% to deployer for liquidity/team
-        _mint(msg.sender, 10_000_000 * 10**18);
+        _mint(msg.sender, 10_000_000 * 10 ** 18);
     }
 
     /**
@@ -37,19 +37,11 @@ contract MFLToken is ERC20, ERC20Burnable, ERC20Permit, ERC20Votes, AccessContro
 
     // Required overrides for multiple inheritance
 
-    function _update(address from, address to, uint256 value)
-        internal
-        override(ERC20, ERC20Votes)
-    {
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Votes) {
         super._update(from, to, value);
     }
 
-    function nonces(address owner)
-        public
-        view
-        override(ERC20Permit, Nonces)
-        returns (uint256)
-    {
+    function nonces(address owner) public view override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
     }
 }

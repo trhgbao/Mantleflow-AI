@@ -57,8 +57,8 @@ contract MantleFlowTest is Test {
         paymentOracle.addOracleNode(oracle3);
 
         // Fund accounts
-        mockUSD.mint(lp, 1_000_000 * 10**18);
-        mockUSD.mint(borrower, 100_000 * 10**18);
+        mockUSD.mint(lp, 1_000_000 * 10 ** 18);
+        mockUSD.mint(borrower, 100_000 * 10 ** 18);
 
         vm.stopPrank();
     }
@@ -72,7 +72,7 @@ contract MantleFlowTest is Test {
             borrower,
             keccak256("invoice123"),
             block.timestamp + 30 days,
-            10000 * 10**18,
+            10000 * 10 ** 18,
             InvoiceNFT.RiskTier.A,
             keccak256("kyc_proof"),
             85
@@ -82,7 +82,7 @@ contract MantleFlowTest is Test {
         assertEq(invoiceNFT.ownerOf(tokenId), borrower);
 
         InvoiceNFT.InvoiceData memory data = invoiceNFT.getInvoiceData(tokenId);
-        assertEq(data.amount, 10000 * 10**18);
+        assertEq(data.amount, 10000 * 10 ** 18);
         assertEq(uint8(data.riskTier), uint8(InvoiceNFT.RiskTier.A));
         assertEq(data.osintScore, 85);
         assertTrue(data.isActive);
@@ -105,19 +105,19 @@ contract MantleFlowTest is Test {
 
     function test_LPDeposit() public {
         vm.startPrank(lp);
-        mockUSD.approve(address(lendingPool), 100000 * 10**18);
-        lendingPool.deposit(address(mockUSD), 100000 * 10**18);
+        mockUSD.approve(address(lendingPool), 100000 * 10 ** 18);
+        lendingPool.deposit(address(mockUSD), 100000 * 10 ** 18);
 
-        assertEq(lendingPool.getLPBalance(lp, address(mockUSD)), 100000 * 10**18);
-        assertEq(lendingPool.availableLiquidity(address(mockUSD)), 100000 * 10**18);
+        assertEq(lendingPool.getLPBalance(lp, address(mockUSD)), 100000 * 10 ** 18);
+        assertEq(lendingPool.availableLiquidity(address(mockUSD)), 100000 * 10 ** 18);
         vm.stopPrank();
     }
 
     function test_CreateLoan() public {
         // Setup: LP deposits
         vm.startPrank(lp);
-        mockUSD.approve(address(lendingPool), 100000 * 10**18);
-        lendingPool.deposit(address(mockUSD), 100000 * 10**18);
+        mockUSD.approve(address(lendingPool), 100000 * 10 ** 18);
+        lendingPool.deposit(address(mockUSD), 100000 * 10 ** 18);
         vm.stopPrank();
 
         // Mint NFT to borrower
@@ -126,7 +126,7 @@ contract MantleFlowTest is Test {
             borrower,
             keccak256("invoice123"),
             block.timestamp + 30 days,
-            10000 * 10**18,
+            10000 * 10 ** 18,
             InvoiceNFT.RiskTier.A,
             keccak256("kyc_proof"),
             85
@@ -142,7 +142,7 @@ contract MantleFlowTest is Test {
         assertEq(loan.tokenId, tokenId);
         assertEq(loan.borrower, borrower);
         assertEq(uint8(loan.status), uint8(LendingPool.LoanStatus.Pending));
-        assertEq(loan.principal, 8000 * 10**18); // 80% LTV of 10000
+        assertEq(loan.principal, 8000 * 10 ** 18); // 80% LTV of 10000
 
         // Verify challenge period
         assertTrue(lendingPool.isInChallengePeriod(loanId));
@@ -152,8 +152,8 @@ contract MantleFlowTest is Test {
     function test_ChallengeLoan() public {
         // Setup loan
         vm.startPrank(lp);
-        mockUSD.approve(address(lendingPool), 100000 * 10**18);
-        lendingPool.deposit(address(mockUSD), 100000 * 10**18);
+        mockUSD.approve(address(lendingPool), 100000 * 10 ** 18);
+        lendingPool.deposit(address(mockUSD), 100000 * 10 ** 18);
         vm.stopPrank();
 
         vm.startPrank(deployer);
@@ -161,7 +161,7 @@ contract MantleFlowTest is Test {
             borrower,
             keccak256("invoice123"),
             block.timestamp + 30 days,
-            10000 * 10**18,
+            10000 * 10 ** 18,
             InvoiceNFT.RiskTier.A,
             keccak256("kyc_proof"),
             85
@@ -202,23 +202,23 @@ contract MantleFlowTest is Test {
     function test_Staking() public {
         // Transfer MFL to user
         vm.prank(deployer);
-        mflToken.transfer(borrower, 10000 * 10**18);
+        mflToken.transfer(borrower, 10000 * 10 ** 18);
 
         vm.startPrank(borrower);
-        mflToken.approve(address(staking), 10000 * 10**18);
+        mflToken.approve(address(staking), 10000 * 10 ** 18);
 
         // Stake Tier 1 (1000 MFL)
-        staking.stake(1000 * 10**18);
+        staking.stake(1000 * 10 ** 18);
         assertEq(staking.getLTVBoost(borrower), 200); // 2%
         assertEq(staking.getUserTier(borrower), 1);
 
         // Stake more to Tier 2 (total 5000 MFL)
-        staking.stake(4000 * 10**18);
+        staking.stake(4000 * 10 ** 18);
         assertEq(staking.getLTVBoost(borrower), 500); // 5%
         assertEq(staking.getUserTier(borrower), 2);
 
         // Stake more to Tier 3 (total 10000 MFL)
-        staking.stake(5000 * 10**18);
+        staking.stake(5000 * 10 ** 18);
         assertEq(staking.getLTVBoost(borrower), 1000); // 10%
         assertEq(staking.getUserTier(borrower), 3);
 
@@ -227,11 +227,11 @@ contract MantleFlowTest is Test {
 
     function test_StakingUnlock() public {
         vm.prank(deployer);
-        mflToken.transfer(borrower, 1000 * 10**18);
+        mflToken.transfer(borrower, 1000 * 10 ** 18);
 
         vm.startPrank(borrower);
-        mflToken.approve(address(staking), 1000 * 10**18);
-        staking.stake(1000 * 10**18);
+        mflToken.approve(address(staking), 1000 * 10 ** 18);
+        staking.stake(1000 * 10 ** 18);
 
         // Should be locked
         assertFalse(staking.isUnlocked(borrower));
@@ -244,7 +244,7 @@ contract MantleFlowTest is Test {
 
         // Unstake
         staking.unstake();
-        assertEq(mflToken.balanceOf(borrower), 1000 * 10**18);
+        assertEq(mflToken.balanceOf(borrower), 1000 * 10 ** 18);
         assertEq(staking.getUserTier(borrower), 0);
 
         vm.stopPrank();
@@ -255,17 +255,17 @@ contract MantleFlowTest is Test {
     function test_MFLToken() public view {
         assertEq(mflToken.name(), "MantleFlow");
         assertEq(mflToken.symbol(), "MFL");
-        assertEq(mflToken.MAX_SUPPLY(), 100_000_000 * 10**18);
+        assertEq(mflToken.MAX_SUPPLY(), 100_000_000 * 10 ** 18);
 
         // Initial supply 10M to deployer
-        assertEq(mflToken.balanceOf(deployer), 10_000_000 * 10**18);
+        assertEq(mflToken.balanceOf(deployer), 10_000_000 * 10 ** 18);
     }
 
     function test_MFLMint() public {
         vm.prank(deployer);
-        mflToken.mint(address(7), 1000 * 10**18);
+        mflToken.mint(address(7), 1000 * 10 ** 18);
 
-        assertEq(mflToken.balanceOf(address(7)), 1000 * 10**18);
+        assertEq(mflToken.balanceOf(address(7)), 1000 * 10 ** 18);
     }
 
     function test_MFLMaxSupply() public {
@@ -273,7 +273,7 @@ contract MantleFlowTest is Test {
 
         // Try to mint beyond max supply
         vm.expectRevert("Exceeds max supply");
-        mflToken.mint(address(7), 91_000_000 * 10**18);
+        mflToken.mint(address(7), 91_000_000 * 10 ** 18);
 
         vm.stopPrank();
     }

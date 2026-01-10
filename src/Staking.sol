@@ -17,13 +17,13 @@ contract Staking is AccessControl, ReentrancyGuard {
     IERC20 public mflToken;
 
     // LTV boost tiers
-    uint256 public constant TIER1_AMOUNT = 1000 * 10**18;   // 1000 MFL
-    uint256 public constant TIER2_AMOUNT = 5000 * 10**18;   // 5000 MFL
-    uint256 public constant TIER3_AMOUNT = 10000 * 10**18;  // 10000 MFL
+    uint256 public constant TIER1_AMOUNT = 1000 * 10 ** 18; // 1000 MFL
+    uint256 public constant TIER2_AMOUNT = 5000 * 10 ** 18; // 5000 MFL
+    uint256 public constant TIER3_AMOUNT = 10000 * 10 ** 18; // 10000 MFL
 
-    uint256 public constant TIER1_BOOST = 200;   // 2% = 200 BPS
-    uint256 public constant TIER2_BOOST = 500;   // 5% = 500 BPS
-    uint256 public constant TIER3_BOOST = 1000;  // 10% = 1000 BPS
+    uint256 public constant TIER1_BOOST = 200; // 2% = 200 BPS
+    uint256 public constant TIER2_BOOST = 500; // 5% = 500 BPS
+    uint256 public constant TIER3_BOOST = 1000; // 10% = 1000 BPS
 
     uint256 public constant MIN_STAKE_DURATION = 7 days;
 
@@ -189,21 +189,18 @@ contract Staking is AccessControl, ReentrancyGuard {
     /**
      * @notice Get tier requirements
      */
-    function getTierRequirements() external pure returns (
-        uint256 tier1Amount,
-        uint256 tier1Boost,
-        uint256 tier2Amount,
-        uint256 tier2Boost,
-        uint256 tier3Amount,
-        uint256 tier3Boost
-    ) {
-        return (
-            TIER1_AMOUNT,
-            TIER1_BOOST,
-            TIER2_AMOUNT,
-            TIER2_BOOST,
-            TIER3_AMOUNT,
-            TIER3_BOOST
-        );
+    function getTierRequirements()
+        external
+        pure
+        returns (
+            uint256 tier1Amount,
+            uint256 tier1Boost,
+            uint256 tier2Amount,
+            uint256 tier2Boost,
+            uint256 tier3Amount,
+            uint256 tier3Boost
+        )
+    {
+        return (TIER1_AMOUNT, TIER1_BOOST, TIER2_AMOUNT, TIER2_BOOST, TIER3_AMOUNT, TIER3_BOOST);
     }
 }

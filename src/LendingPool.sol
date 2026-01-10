@@ -28,33 +28,33 @@ contract LendingPool is AccessControl, ReentrancyGuard {
     // Constants
     uint256 public constant CHALLENGE_PERIOD = 24 hours;
     uint256 public constant ORIGINATION_FEE_BPS = 100; // 1%
-    uint256 public constant INSURANCE_FEE_BPS = 500;   // 5% of origination fee
+    uint256 public constant INSURANCE_FEE_BPS = 500; // 5% of origination fee
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant SECONDS_PER_YEAR = 365 days;
 
     // Loan status enum
     enum LoanStatus {
-        Pending,    // 0: In challenge period (24h)
-        Active,     // 1: Loan is active
-        Overdue,    // 2: Past due date
-        Defaulted,  // 3: 14+ days overdue
+        Pending, // 0: In challenge period (24h)
+        Active, // 1: Loan is active
+        Overdue, // 2: Past due date
+        Defaulted, // 3: 14+ days overdue
         Liquidated, // 4: NFT liquidated
-        Repaid,     // 5: Fully repaid
-        Challenged  // 6: Under dispute
+        Repaid, // 5: Fully repaid
+        Challenged // 6: Under dispute
     }
 
     struct Loan {
-        uint256 tokenId;           // Invoice NFT token ID
-        address borrower;          // Borrower address
-        address currency;          // Loan currency (ERC20)
-        uint256 principal;         // Principal amount
-        uint256 interestRate;      // Interest rate in BPS
-        uint256 dueDate;           // Loan due date
-        uint256 createdAt;         // Loan creation timestamp
-        uint256 challengeEndTime;  // Challenge period end time
-        uint256 repaidAmount;      // Amount repaid
-        LoanStatus status;         // Current status
-        InvoiceNFT.RiskTier tier;  // Risk tier
+        uint256 tokenId; // Invoice NFT token ID
+        address borrower; // Borrower address
+        address currency; // Loan currency (ERC20)
+        uint256 principal; // Principal amount
+        uint256 interestRate; // Interest rate in BPS
+        uint256 dueDate; // Loan due date
+        uint256 createdAt; // Loan creation timestamp
+        uint256 challengeEndTime; // Challenge period end time
+        uint256 repaidAmount; // Amount repaid
+        LoanStatus status; // Current status
+        InvoiceNFT.RiskTier tier; // Risk tier
     }
 
     struct Challenge {
@@ -203,10 +203,7 @@ contract LendingPool is AccessControl, ReentrancyGuard {
      * @param tokenId Invoice NFT token ID
      * @param currency Loan currency
      */
-    function createLoan(
-        uint256 tokenId,
-        address currency
-    ) external nonReentrant returns (uint256) {
+    function createLoan(uint256 tokenId, address currency) external nonReentrant returns (uint256) {
         require(supportedCurrencies[currency], "Currency not supported");
         require(invoiceNFT.ownerOf(tokenId) == msg.sender, "Not NFT owner");
 
@@ -255,15 +252,7 @@ contract LendingPool is AccessControl, ReentrancyGuard {
         uint256 insuranceContribution = (originationFee * INSURANCE_FEE_BPS) / BPS_DENOMINATOR;
         insuranceFund[currency] += insuranceContribution;
 
-        emit LoanCreated(
-            loanId,
-            tokenId,
-            msg.sender,
-            currency,
-            principal,
-            invoice.dueDate,
-            invoice.riskTier
-        );
+        emit LoanCreated(loanId, tokenId, msg.sender, currency, principal, invoice.dueDate, invoice.riskTier);
 
         emit InsuranceFundContribution(currency, insuranceContribution);
 
@@ -298,10 +287,7 @@ contract LendingPool is AccessControl, ReentrancyGuard {
      */
     function repay(uint256 loanId, uint256 amount) external nonReentrant {
         Loan storage loan = loans[loanId];
-        require(
-            loan.status == LoanStatus.Active || loan.status == LoanStatus.Overdue,
-            "Loan not active/overdue"
-        );
+        require(loan.status == LoanStatus.Active || loan.status == LoanStatus.Overdue, "Loan not active/overdue");
         require(amount > 0, "Amount must be positive");
 
         // Calculate total owed
@@ -340,11 +326,7 @@ contract LendingPool is AccessControl, ReentrancyGuard {
         loan.status = LoanStatus.Challenged;
 
         challenges[loanId] = Challenge({
-            challenger: msg.sender,
-            reason: reason,
-            createdAt: block.timestamp,
-            resolved: false,
-            accepted: false
+            challenger: msg.sender, reason: reason, createdAt: block.timestamp, resolved: false, accepted: false
         });
 
         emit LoanChallenged(loanId, msg.sender, reason);
@@ -356,11 +338,10 @@ contract LendingPool is AccessControl, ReentrancyGuard {
      * @param accepted Whether challenge is accepted
      * @param resolution Resolution details
      */
-    function resolveChallenge(
-        uint256 loanId,
-        bool accepted,
-        string calldata resolution
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function resolveChallenge(uint256 loanId, bool accepted, string calldata resolution)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         Loan storage loan = loans[loanId];
         require(loan.status == LoanStatus.Challenged, "Not challenged");
 
@@ -441,12 +422,9 @@ contract LendingPool is AccessControl, ReentrancyGuard {
     function calculateTotalOwed(uint256 loanId) public view returns (uint256) {
         Loan memory loan = loans[loanId];
 
-        uint256 timeElapsed = block.timestamp > loan.createdAt
-            ? block.timestamp - loan.createdAt
-            : 0;
+        uint256 timeElapsed = block.timestamp > loan.createdAt ? block.timestamp - loan.createdAt : 0;
 
-        uint256 interest = (loan.principal * loan.interestRate * timeElapsed)
-            / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+        uint256 interest = (loan.principal * loan.interestRate * timeElapsed) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
 
         return loan.principal + interest;
     }

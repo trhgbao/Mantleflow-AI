@@ -17,19 +17,24 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
 
     uint256 private _nextTokenId;
 
-    enum RiskTier { A, B, C, D }
+    enum RiskTier {
+        A,
+        B,
+        C,
+        D
+    }
 
     struct InvoiceData {
-        bytes32 invoiceHash;           // SHA-256 of document
+        bytes32 invoiceHash; // SHA-256 of document
         bytes32 debtorConfirmationHash; // Hash of debtor confirmation
-        uint256 dueDate;               // Due date timestamp
-        uint256 amount;                // Invoice amount in base currency
-        RiskTier riskTier;             // A, B, C, D
-        bytes32 kycProofHash;          // KYC verification proof
-        uint256 osintScore;            // OSINT score (0-100)
-        address creditor;              // Original creditor address
-        uint256 createdAt;             // Timestamp of minting
-        bool isActive;                 // Is NFT active (not burned)
+        uint256 dueDate; // Due date timestamp
+        uint256 amount; // Invoice amount in base currency
+        RiskTier riskTier; // A, B, C, D
+        bytes32 kycProofHash; // KYC verification proof
+        uint256 osintScore; // OSINT score (0-100)
+        address creditor; // Original creditor address
+        uint256 createdAt; // Timestamp of minting
+        bool isActive; // Is NFT active (not burned)
     }
 
     // tokenId => InvoiceData
@@ -48,16 +53,9 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
         RiskTier riskTier
     );
 
-    event InvoiceBurned(
-        uint256 indexed tokenId,
-        address indexed burner,
-        string reason
-    );
+    event InvoiceBurned(uint256 indexed tokenId, address indexed burner, string reason);
 
-    event InvoiceDataUpdated(
-        uint256 indexed tokenId,
-        bytes32 debtorConfirmationHash
-    );
+    event InvoiceDataUpdated(uint256 indexed tokenId, bytes32 debtorConfirmationHash);
 
     constructor() ERC721("MantleFlow Invoice", "MFINV") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -119,10 +117,7 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
      * @param tokenId Token ID
      * @param debtorConfirmationHash Hash cua debtor confirmation
      */
-    function setDebtorConfirmation(
-        uint256 tokenId,
-        bytes32 debtorConfirmationHash
-    ) external onlyRole(MINTER_ROLE) {
+    function setDebtorConfirmation(uint256 tokenId, bytes32 debtorConfirmationHash) external onlyRole(MINTER_ROLE) {
         require(_ownerOf(tokenId) != address(0), "Token does not exist");
         require(_invoices[tokenId].isActive, "Invoice is not active");
 
@@ -196,8 +191,8 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
      * @return Interest rate in basis points (500, 800, 1200, 0)
      */
     function getInterestRateByTier(RiskTier tier) public pure returns (uint256) {
-        if (tier == RiskTier.A) return 500;  // 5%
-        if (tier == RiskTier.B) return 800;  // 8%
+        if (tier == RiskTier.A) return 500; // 5%
+        if (tier == RiskTier.B) return 800; // 8%
         if (tier == RiskTier.C) return 1200; // 12%
         return 0; // Tier D = reject
     }
@@ -211,10 +206,7 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
         return super._update(to, tokenId, auth);
     }
 
-    function _increaseBalance(address account, uint128 value)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
+    function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
         super._increaseBalance(account, value);
     }
 

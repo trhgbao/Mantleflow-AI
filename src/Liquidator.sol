@@ -22,8 +22,8 @@ contract Liquidator is IERC721Receiver, AccessControl, ReentrancyGuard {
     address public lendingPool;
 
     // Dutch Auction parameters
-    uint256 public constant STARTING_PRICE_PERCENT = 80;  // 80% of face value
-    uint256 public constant ENDING_PRICE_PERCENT = 20;    // 20% of face value
+    uint256 public constant STARTING_PRICE_PERCENT = 80; // 80% of face value
+    uint256 public constant ENDING_PRICE_PERCENT = 20; // 20% of face value
     uint256 public constant AUCTION_DURATION = 7 days;
     uint256 public constant PRICE_DECREASE_INTERVAL = 1 hours;
 
@@ -38,13 +38,13 @@ contract Liquidator is IERC721Receiver, AccessControl, ReentrancyGuard {
         uint256 tokenId;
         uint256 loanId;
         address currency;
-        uint256 faceValue;         // Original invoice amount
-        uint256 debtOwed;          // Total debt owed to LPs
-        uint256 startPrice;        // Starting price (80% of face value)
-        uint256 endPrice;          // Minimum price (20% of face value)
+        uint256 faceValue; // Original invoice amount
+        uint256 debtOwed; // Total debt owed to LPs
+        uint256 startPrice; // Starting price (80% of face value)
+        uint256 endPrice; // Minimum price (20% of face value)
         uint256 startTime;
         uint256 endTime;
-        address seller;            // Original borrower
+        address seller; // Original borrower
         address buyer;
         uint256 soldPrice;
         AuctionStatus status;
@@ -70,18 +70,10 @@ contract Liquidator is IERC721Receiver, AccessControl, ReentrancyGuard {
         uint256 endTime
     );
 
-    event AuctionBid(
-        uint256 indexed auctionId,
-        address indexed buyer,
-        uint256 price
-    );
+    event AuctionBid(uint256 indexed auctionId, address indexed buyer, uint256 price);
 
     event AuctionSettled(
-        uint256 indexed auctionId,
-        address indexed buyer,
-        uint256 finalPrice,
-        uint256 lpRecovery,
-        uint256 badDebtCovered
+        uint256 indexed auctionId, address indexed buyer, uint256 finalPrice, uint256 lpRecovery, uint256 badDebtCovered
     );
 
     event AuctionCancelled(uint256 indexed auctionId, string reason);
@@ -138,7 +130,10 @@ contract Liquidator is IERC721Receiver, AccessControl, ReentrancyGuard {
         address seller
     ) external onlyRole(KEEPER_ROLE) nonReentrant returns (uint256) {
         require(invoiceNFT.ownerOf(tokenId) == address(this), "NFT not in liquidator");
-        require(tokenAuction[tokenId] == 0 || auctions[tokenAuction[tokenId]].status != AuctionStatus.Active, "Auction exists");
+        require(
+            tokenAuction[tokenId] == 0 || auctions[tokenAuction[tokenId]].status != AuctionStatus.Active,
+            "Auction exists"
+        );
         require(faceValue > 0, "Invalid face value");
 
         uint256 auctionId = ++_nextAuctionId;
@@ -287,11 +282,11 @@ contract Liquidator is IERC721Receiver, AccessControl, ReentrancyGuard {
      * @param amount Amount to cover
      * @param recipient Recipient of funds
      */
-    function coverBadDebt(
-        address currency,
-        uint256 amount,
-        address recipient
-    ) external onlyRole(KEEPER_ROLE) nonReentrant {
+    function coverBadDebt(address currency, uint256 amount, address recipient)
+        external
+        onlyRole(KEEPER_ROLE)
+        nonReentrant
+    {
         require(insuranceFund[currency] >= amount, "Insufficient insurance");
         require(recipient != address(0), "Invalid recipient");
 
@@ -350,12 +345,7 @@ contract Liquidator is IERC721Receiver, AccessControl, ReentrancyGuard {
     /**
      * @notice Required for receiving ERC721 tokens
      */
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
 }

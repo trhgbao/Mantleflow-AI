@@ -31,25 +31,12 @@ contract Escrow is IERC721Receiver, AccessControl, ReentrancyGuard {
     mapping(address => uint256[]) private _ownerLockedTokens;
 
     // Events
-    event NFTLocked(
-        uint256 indexed tokenId,
-        address indexed owner,
-        uint256 indexed loanId,
-        uint256 timestamp
-    );
+    event NFTLocked(uint256 indexed tokenId, address indexed owner, uint256 indexed loanId, uint256 timestamp);
 
-    event NFTReleased(
-        uint256 indexed tokenId,
-        address indexed owner,
-        uint256 indexed loanId,
-        uint256 timestamp
-    );
+    event NFTReleased(uint256 indexed tokenId, address indexed owner, uint256 indexed loanId, uint256 timestamp);
 
     event NFTTransferredToLiquidator(
-        uint256 indexed tokenId,
-        address indexed from,
-        address indexed liquidator,
-        uint256 loanId
+        uint256 indexed tokenId, address indexed from, address indexed liquidator, uint256 loanId
     );
 
     constructor(address _invoiceNFT) {
@@ -64,20 +51,12 @@ contract Escrow is IERC721Receiver, AccessControl, ReentrancyGuard {
      * @param owner Original owner of NFT
      * @param loanId Associated loan ID
      */
-    function lockNFT(
-        uint256 tokenId,
-        address owner,
-        uint256 loanId
-    ) external onlyRole(LENDING_POOL_ROLE) nonReentrant {
+    function lockNFT(uint256 tokenId, address owner, uint256 loanId) external onlyRole(LENDING_POOL_ROLE) nonReentrant {
         require(!lockedNFTs[tokenId].isLocked, "NFT already locked");
         require(invoiceNFT.ownerOf(tokenId) == address(this), "NFT not transferred to escrow");
 
-        lockedNFTs[tokenId] = LockedNFT({
-            originalOwner: owner,
-            loanId: loanId,
-            lockedAt: block.timestamp,
-            isLocked: true
-        });
+        lockedNFTs[tokenId] =
+            LockedNFT({originalOwner: owner, loanId: loanId, lockedAt: block.timestamp, isLocked: true});
 
         _ownerLockedTokens[owner].push(tokenId);
 
@@ -89,10 +68,7 @@ contract Escrow is IERC721Receiver, AccessControl, ReentrancyGuard {
      * @param tokenId NFT token ID
      * @param loanId Loan ID to verify
      */
-    function releaseNFT(
-        uint256 tokenId,
-        uint256 loanId
-    ) external onlyRole(LENDING_POOL_ROLE) nonReentrant {
+    function releaseNFT(uint256 tokenId, uint256 loanId) external onlyRole(LENDING_POOL_ROLE) nonReentrant {
         require(lockedNFTs[tokenId].isLocked, "NFT not locked");
         require(lockedNFTs[tokenId].loanId == loanId, "Loan ID mismatch");
 
@@ -116,11 +92,11 @@ contract Escrow is IERC721Receiver, AccessControl, ReentrancyGuard {
      * @param loanId Loan ID
      * @param liquidatorContract Address of liquidator contract
      */
-    function transferToLiquidator(
-        uint256 tokenId,
-        uint256 loanId,
-        address liquidatorContract
-    ) external onlyRole(LENDING_POOL_ROLE) nonReentrant {
+    function transferToLiquidator(uint256 tokenId, uint256 loanId, address liquidatorContract)
+        external
+        onlyRole(LENDING_POOL_ROLE)
+        nonReentrant
+    {
         require(lockedNFTs[tokenId].isLocked, "NFT not locked");
         require(lockedNFTs[tokenId].loanId == loanId, "Loan ID mismatch");
         require(liquidatorContract != address(0), "Invalid liquidator");
@@ -188,12 +164,7 @@ contract Escrow is IERC721Receiver, AccessControl, ReentrancyGuard {
     /**
      * @notice Required for receiving ERC721 tokens
      */
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
 }
