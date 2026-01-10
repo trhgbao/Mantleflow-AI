@@ -19,8 +19,8 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
 
     LendingPool public lendingPool;
 
-    uint256 public constant REQUIRED_CONFIRMATIONS = 2;
-    uint256 public constant CHALLENGE_PERIOD = 24 hours;
+    uint256 public constant REQUIRED_CONFIRMATIONS = 1;
+    uint256 public constant CHALLENGE_PERIOD = 0 seconds;
 
     enum PaymentStatus {
         Pending, // 0: Submitted, waiting confirmations
