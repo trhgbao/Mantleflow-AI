@@ -1,0 +1,6 @@
+[submodule "mantleflow-contracts/lib/forge-std"]
+	path = mantleflow-contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "mantleflow-contracts/lib/openzeppelin-contracts"]
+	path = mantleflow-contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

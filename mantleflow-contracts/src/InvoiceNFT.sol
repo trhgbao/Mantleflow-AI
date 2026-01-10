@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title InvoiceNFT
@@ -118,7 +118,7 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
      * @param debtorConfirmationHash Hash cua debtor confirmation
      */
     function setDebtorConfirmation(uint256 tokenId, bytes32 debtorConfirmationHash) external onlyRole(MINTER_ROLE) {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(_exists(tokenId), "Token does not exist");
         require(_invoices[tokenId].isActive, "Invoice is not active");
 
         _invoices[tokenId].debtorConfirmationHash = debtorConfirmationHash;
@@ -132,7 +132,7 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
      * @param reason Reason for burning
      */
     function burn(uint256 tokenId, string calldata reason) external onlyRole(BURNER_ROLE) nonReentrant {
-        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        require(_exists(tokenId), "Token does not exist");
         require(_invoices[tokenId].isActive, "Already burned");
 
         _invoices[tokenId].isActive = false;
@@ -152,7 +152,7 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
      * @return InvoiceData struct
      */
     function getInvoiceData(uint256 tokenId) external view returns (InvoiceData memory) {
-        require(_ownerOf(tokenId) != address(0) || !_invoices[tokenId].isActive, "Token does not exist");
+        require(_exists(tokenId) || !_invoices[tokenId].isActive, "Token does not exist");
         return _invoices[tokenId];
     }
 
@@ -197,17 +197,12 @@ contract InvoiceNFT is ERC721, ERC721Enumerable, AccessControl, ReentrancyGuard 
         return 0; // Tier D = reject
     }
 
-    // Required overrides
-    function _update(address to, uint256 tokenId, address auth)
+    // Required overrides for OpenZeppelin v4.x
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
         internal
         override(ERC721, ERC721Enumerable)
-        returns (address)
     {
-        return super._update(to, tokenId, auth);
-    }
-
-    function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
-        super._increaseBalance(account, value);
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
     function supportsInterface(bytes4 interfaceId)

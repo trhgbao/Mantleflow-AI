@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./InvoiceNFT.sol";
 import "./Escrow.sol";
 
@@ -26,7 +26,7 @@ contract LendingPool is AccessControl, ReentrancyGuard {
     address public liquidator;
 
     // Constants
-    uint256 public constant CHALLENGE_PERIOD = 24 hours;
+    uint256 public constant CHALLENGE_PERIOD = 0 seconds;
     uint256 public constant ORIGINATION_FEE_BPS = 100; // 1%
     uint256 public constant INSURANCE_FEE_BPS = 500; // 5% of origination fee
     uint256 public constant PENALTY_RATE_MULTIPLIER = 200; // 2x interest rate for overdue
