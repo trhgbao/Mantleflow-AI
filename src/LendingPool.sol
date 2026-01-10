@@ -441,11 +441,13 @@ contract LendingPool is AccessControl, ReentrancyGuard {
             }
         }
 
-        uint256 normalInterest = (loan.principal * loan.interestRate * normalInterestDuration) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
-        
+        uint256 normalInterest =
+            (loan.principal * loan.interestRate * normalInterestDuration) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+
         // Apply penalty rate for overdue period (or use standard rate if 0 for older loans)
         uint256 effectivePenaltyRate = loan.penaltyRate > 0 ? loan.penaltyRate : loan.interestRate;
-        uint256 penaltyInterest = (loan.principal * effectivePenaltyRate * penaltyInterestDuration) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+        uint256 penaltyInterest =
+            (loan.principal * effectivePenaltyRate * penaltyInterestDuration) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
 
         return loan.principal + normalInterest + penaltyInterest;
     }
