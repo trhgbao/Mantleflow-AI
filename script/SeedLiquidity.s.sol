@@ -9,7 +9,7 @@ contract SeedLiquidity is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
-        
+
         address lendingPoolAddress = 0x1710eF07b4BaE140257634e4452760c06fED93fB;
         address mflTokenAddress = 0x717a00a8BFc2cabEC617119c8f85e40cBe6c1Bba;
 
@@ -27,7 +27,7 @@ contract SeedLiquidity is Script {
         }
 
         // 2. Approve LendingPool to spend MFL
-        uint256 amountToDeposit = 1_000_000 * 10**18; // 1 Million tokens
+        uint256 amountToDeposit = 1_000_000 * 10 ** 18; // 1 Million tokens
         mfl.approve(address(pool), amountToDeposit);
         console.log("Approved LendingPool to spend MFL");
 
