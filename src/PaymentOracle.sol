@@ -3,6 +3,8 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./LendingPool.sol";
 
 /**
@@ -11,6 +13,8 @@ import "./LendingPool.sol";
  * @dev Multi-sig 2/3 oracle nodes confirm, Challenge period 24h
  */
 contract PaymentOracle is AccessControl, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     bytes32 public constant ORACLE_NODE_ROLE = keccak256("ORACLE_NODE_ROLE");
 
     LendingPool public lendingPool;
@@ -199,9 +203,21 @@ contract PaymentOracle is AccessControl, ReentrancyGuard {
 
         payment.status = PaymentStatus.Executed;
 
-        // Call lending pool to process repayment
-        // Note: The actual transfer happens in LendingPool.repay()
-        // This oracle just confirms off-chain payment happened
+        // --- CRITICAL FIX: Gateway Liquidity Model ---
+        // 1. Get Loan currency
+        LendingPool.Loan memory loan = lendingPool.getLoan(payment.loanId);
+        IERC20 currency = IERC20(loan.currency);
+
+        // 2. Pull tokens from Gateway (msg.sender) to this contract
+        // Gateway must approve PaymentOracle before calling
+        currency.safeTransferFrom(msg.sender, address(this), payment.amount);
+
+        // 3. Approve LendingPool to pull from this contract
+        currency.forceApprove(address(lendingPool), payment.amount);
+
+        // 4. Execute repayment on LendingPool
+        lendingPool.repay(payment.loanId, payment.amount);
+        // ---------------------------------------------
 
         emit PaymentExecuted(paymentId, payment.loanId, payment.amount);
     }
