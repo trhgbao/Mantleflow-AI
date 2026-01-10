@@ -29,6 +29,7 @@ contract LendingPool is AccessControl, ReentrancyGuard {
     uint256 public constant CHALLENGE_PERIOD = 24 hours;
     uint256 public constant ORIGINATION_FEE_BPS = 100; // 1%
     uint256 public constant INSURANCE_FEE_BPS = 500; // 5% of origination fee
+    uint256 public constant PENALTY_RATE_MULTIPLIER = 200; // 2x interest rate for overdue
     uint256 public constant BPS_DENOMINATOR = 10000;
     uint256 public constant SECONDS_PER_YEAR = 365 days;
 
@@ -55,6 +56,7 @@ contract LendingPool is AccessControl, ReentrancyGuard {
         uint256 repaidAmount; // Amount repaid
         LoanStatus status; // Current status
         InvoiceNFT.RiskTier tier; // Risk tier
+        uint256 penaltyRate; // Penalty interest rate (BPS)
     }
 
     struct Challenge {
@@ -239,7 +241,8 @@ contract LendingPool is AccessControl, ReentrancyGuard {
             challengeEndTime: block.timestamp + CHALLENGE_PERIOD,
             repaidAmount: 0,
             status: LoanStatus.Pending,
-            tier: invoice.riskTier
+            tier: invoice.riskTier,
+            penaltyRate: interestRate * PENALTY_RATE_MULTIPLIER / 100 // Double interest
         });
 
         // Lock NFT in escrow
@@ -423,10 +426,28 @@ contract LendingPool is AccessControl, ReentrancyGuard {
         Loan memory loan = loans[loanId];
 
         uint256 timeElapsed = block.timestamp > loan.createdAt ? block.timestamp - loan.createdAt : 0;
+        uint256 normalInterestDuration = timeElapsed;
+        uint256 penaltyInterestDuration = 0;
 
-        uint256 interest = (loan.principal * loan.interestRate * timeElapsed) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+        // If overdue, split duration
+        if (block.timestamp > loan.dueDate) {
+            uint256 overdueTime = block.timestamp - loan.dueDate;
+            if (overdueTime < timeElapsed) {
+                normalInterestDuration = timeElapsed - overdueTime;
+                penaltyInterestDuration = overdueTime;
+            } else {
+                normalInterestDuration = 0;
+                penaltyInterestDuration = timeElapsed;
+            }
+        }
 
-        return loan.principal + interest;
+        uint256 normalInterest = (loan.principal * loan.interestRate * normalInterestDuration) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+        
+        // Apply penalty rate for overdue period (or use standard rate if 0 for older loans)
+        uint256 effectivePenaltyRate = loan.penaltyRate > 0 ? loan.penaltyRate : loan.interestRate;
+        uint256 penaltyInterest = (loan.principal * effectivePenaltyRate * penaltyInterestDuration) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+
+        return loan.principal + normalInterest + penaltyInterest;
     }
 
     /**
