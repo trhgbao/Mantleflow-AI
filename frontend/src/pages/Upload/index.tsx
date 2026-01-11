@@ -64,13 +64,20 @@ const Upload: React.FC = () => {
       setInvoiceLocal(extractedInvoice);
       setInvoice(extractedInvoice);
 
-      // Phase 2: OSINT Check
+      // Phase 2: OSINT Check - Đánh giá độ uy tín bằng Gemini AI
       setAnalysisPhase('osint');
       const osintResult = await aiService.checkOSINT({
+        // Document info
+        doc_type: extractedInvoice.doc_type,
+        doc_name: extractedInvoice.doc_name,
+        invoice_number: extractedInvoice.invoice_number,
+        amount: extractedInvoice.amount,
+        currency: extractedInvoice.currency,
+        attributes: extractedInvoice.attributes,
+        // Debtor info
         company_name: extractedInvoice.debtor.name,
         tax_id: extractedInvoice.debtor.tax_id,
         address: extractedInvoice.debtor.address,
-        website: undefined, // Could be extracted if available
       });
 
       if (!osintResult.success || !osintResult.data) {

@@ -10,13 +10,13 @@ export const EXPLORER_URL = 'https://explorer.sepolia.mantle.xyz';
 
 // Contract Addresses (Mantle Sepolia Testnet)
 export const CONTRACTS = {
-  INVOICE_NFT: '0x58bd279e9fe238d7d078d75021da60b991606680',
-  LENDING_POOL: '0x1710ef07b4bae140257634e4452760c06fed93fb',
-  ESCROW: '0x86d4dbf4af9f9e9ddb44cc7b14e145bd8c93eb07',
-  PAYMENT_ORACLE: '0xa8850959cc380db7ce5f0fc8e985c830cef04e44',
-  LIQUIDATOR: '0x24ce976c9fd23464f1f4e81e90ba940b2d01195b',
-  MFL_TOKEN: '0x0000000000000000000000000000000000000000',
-  STAKING: '0x0000000000000000000000000000000000000000',
+  INVOICE_NFT: '0x312a7393Ce4ccfdbcB80f19B06a529b547D2442C',
+  LENDING_POOL: '0xD74f2ECf73606313Fc5A2af3A3B53c713Ed7abBD',
+  ESCROW: '0x44C09902e70bC79006fa3649F387ee2b37b5a667',
+  PAYMENT_ORACLE: '0x6A20797d025f6137c8f0018274F10Bb685059e72',
+  LIQUIDATOR: '0xf333D1A050FdA2427BAe40B2f52E38C43e9CbdDA',
+  MFL_TOKEN: '0x5EfDb4EEf2d7Bb9884C01cc3600E967Ed92A7AF5',
+  STAKING: '0x3c51F786018A153b24DcA32000361610da55E4bd',
 };
 
 // Risk Tier Configuration
@@ -38,13 +38,44 @@ export const STATUS_CONFIG = {
   Challenged: { color: 'orange', label: 'Challenged' },
 };
 
-// OSINT Check Names
-export const OSINT_CHECK_NAMES = {
-  website: 'Website',
-  linkedin: 'LinkedIn',
-  google_maps: 'Google Maps',
-  press_news: 'Press & News',
-  social_media: 'Social Media',
+// OSINT Credibility Criteria (4 tiêu chí đánh giá)
+export const CREDIBILITY_CRITERIA = {
+  completeness: {
+    key: 'completeness',
+    label: 'Tính đầy đủ',
+    description: 'Thông tin có đủ các trường quan trọng không?',
+    icon: 'FileTextOutlined',
+    max_score: 25,
+  },
+  validity: {
+    key: 'validity',
+    label: 'Tính hợp lệ',
+    description: 'Format dữ liệu có đúng chuẩn không?',
+    icon: 'CheckCircleOutlined',
+    max_score: 25,
+  },
+  consistency: {
+    key: 'consistency',
+    label: 'Tính nhất quán',
+    description: 'Thông tin có mâu thuẫn nhau không?',
+    icon: 'SyncOutlined',
+    max_score: 25,
+  },
+  no_fraud_signs: {
+    key: 'no_fraud_signs',
+    label: 'Không có dấu hiệu gian lận',
+    description: 'Có dấu hiệu giả mạo, bất thường không?',
+    icon: 'SafetyCertificateOutlined',
+    max_score: 25,
+  },
+};
+
+// Credibility Tiers
+export const CREDIBILITY_TIERS = {
+  A: { range: [80, 100], label: 'Rất đáng tin cậy', color: '#52c41a' },
+  B: { range: [60, 79], label: 'Đáng tin cậy', color: '#1890ff' },
+  C: { range: [40, 59], label: 'Cần xem xét', color: '#faad14' },
+  D: { range: [0, 39], label: 'Không đáng tin cậy', color: '#f5222d' },
 };
 
 // Supported File Types

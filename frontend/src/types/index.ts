@@ -106,38 +106,48 @@ export interface RiskScoreData {
   is_approved: boolean;
 }
 
-// OSINT types
+// === OSINT types (updated for Gemini AI evaluation) ===
 export type OSINTStatus = 'passed' | 'warning' | 'failed';
 
-export interface OSINTCheckResult {
+// Tiêu chí đánh giá độ uy tín
+export interface CredibilityScores {
+  completeness: number;      // Tính đầy đủ (0-25)
+  validity: number;          // Tính hợp lệ (0-25)
+  consistency: number;       // Tính nhất quán (0-25)
+  no_fraud_signs: number;    // Không có dấu hiệu gian lận (0-25)
+}
+
+// Kết quả đánh giá từng tiêu chí
+export interface CredibilityCriterion {
   score: number;
   max_score: number;
   status: OSINTStatus;
-  details: Record<string, any>;
+  label: string;
+  description: string;
 }
 
-export interface OSINTChecks {
-  website: OSINTCheckResult;
-  linkedin: OSINTCheckResult;
-  google_maps: OSINTCheckResult;
-  press_news: OSINTCheckResult;
-  social_media: OSINTCheckResult;
-}
-
-export interface BusinessAgeResult {
-  months: number;
-  status: 'passed' | 'warning' | 'rejected';
-}
-
+// Data OSINT trả về từ API
 export interface OSINTData {
-  osint_score: number;
-  is_shell_company: boolean;
-  auto_reject: boolean;
-  reject_reason?: string;
-  checks: OSINTChecks;
-  business_age: BusinessAgeResult;
-  red_flags: string[];
-  recommendation: string;
+  osint_score: number;           // Điểm uy tín tổng (0-100)
+  is_credible: boolean;          // Dữ liệu có đáng tin cậy không
+  is_shell_company?: boolean;    // Backwards compatibility
+  auto_reject: boolean;          // Tự động từ chối
+  reject_reason?: string;        // Lý do từ chối
+  
+  // 4 tiêu chí đánh giá
+  criteria: {
+    completeness: CredibilityCriterion;
+    validity: CredibilityCriterion;
+    consistency: CredibilityCriterion;
+    no_fraud_signs: CredibilityCriterion;
+  };
+  
+  red_flags: string[];           // Các vấn đề phát hiện
+  positive_signs: string[];      // Các điểm tích cực
+  
+  summary: string;               // Tóm tắt đánh giá
+  recommendation: string;        // Khuyến nghị
+  doc_type?: string;             // Loại tài liệu đã đánh giá
 }
 
 // Loan types

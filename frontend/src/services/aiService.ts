@@ -6,7 +6,16 @@ import type {
   OSINTData,
   EscalateData,
   GenerateEmailData,
+  OSINTStatus,
 } from '../types';
+
+// Helper function to determine status from score
+const getStatusFromScore = (score: number, maxScore: number): OSINTStatus => {
+  const ratio = score / maxScore;
+  if (ratio >= 0.7) return 'passed';
+  if (ratio >= 0.4) return 'warning';
+  return 'failed';
+};
 
 export const aiService = {
   /**
@@ -104,7 +113,9 @@ export const aiService = {
   },
 
   /**
-   * Check OSINT - Gửi data OCR cho Gemini đánh giá độ tin cậy
+   * Check OSINT - Đánh giá độ uy tín dữ liệu OCR bằng Gemini AI
+   * 
+   * Flow: OCR data → Gemini AI → Credibility Score (0-100)
    */
   checkOSINT: async (data: {
     // Full OCR extracted data
@@ -132,58 +143,58 @@ export const aiService = {
 
       const backendData = apiData.data || apiData;
       const osintScore = backendData.osint_score || 0;
-      const isShellCompany = backendData.is_shell_company || false;
-
-      // Get category scores from Gemini response
-      const categoryScores = backendData.details?.category_scores || {};
-
+      const isCredible = backendData.is_credible ?? (osintScore >= 60);
+      
+      // Get scores from backend (new format with 4 criteria, 25 points each)
+      const scores = backendData.analysis?.scores || {};
+      
       // Transform backend response to frontend OSINTData format
       const osintData: OSINTData = {
         osint_score: osintScore,
-        is_shell_company: isShellCompany,
-        auto_reject: isShellCompany || osintScore < 30,
-        reject_reason: isShellCompany ? 'Tài liệu có dấu hiệu giả mạo' : undefined,
+        is_credible: isCredible,
+        is_shell_company: !isCredible,
+        auto_reject: osintScore < 40,
+        reject_reason: osintScore < 40 ? 'Điểm uy tín quá thấp' : undefined,
+        
+        // 4 tiêu chí đánh giá
+        criteria: {
+          completeness: {
+            score: scores.completeness ?? Math.round(osintScore / 4),
+            max_score: 25,
+            status: getStatusFromScore(scores.completeness ?? osintScore / 4, 25),
+            label: 'Tính đầy đủ',
+            description: 'Thông tin có đủ các trường quan trọng không?',
+          },
+          validity: {
+            score: scores.validity ?? Math.round(osintScore / 4),
+            max_score: 25,
+            status: getStatusFromScore(scores.validity ?? osintScore / 4, 25),
+            label: 'Tính hợp lệ',
+            description: 'Format dữ liệu có đúng chuẩn không?',
+          },
+          consistency: {
+            score: scores.consistency ?? Math.round(osintScore / 4),
+            max_score: 25,
+            status: getStatusFromScore(scores.consistency ?? osintScore / 4, 25),
+            label: 'Tính nhất quán',
+            description: 'Thông tin có mâu thuẫn nhau không?',
+          },
+          no_fraud_signs: {
+            score: scores.no_fraud_signs ?? Math.round(osintScore / 4),
+            max_score: 25,
+            status: getStatusFromScore(scores.no_fraud_signs ?? osintScore / 4, 25),
+            label: 'Không có dấu hiệu gian lận',
+            description: 'Có dấu hiệu giả mạo, bất thường không?',
+          },
+        },
+        
         red_flags: backendData.red_flags || [],
-        recommendation: backendData.details?.recommendation ||
-          backendData.details?.analysis_summary ||
-          (osintScore >= 60 ? 'Tài liệu hợp lệ' : 'Cần xem xét thêm'),
-        // Map Gemini category scores to frontend checks format
-        checks: {
-          website: {
-            score: categoryScores.completeness || Math.round(osintScore / 5),
-            max_score: 20,
-            status: (categoryScores.completeness || osintScore / 5) >= 15 ? 'passed' : (categoryScores.completeness || osintScore / 5) >= 10 ? 'warning' : 'failed',
-            details: { status: 'Đầy đủ thông tin' },
-          },
-          linkedin: {
-            score: categoryScores.format_validity || Math.round(osintScore / 5),
-            max_score: 20,
-            status: (categoryScores.format_validity || osintScore / 5) >= 15 ? 'passed' : (categoryScores.format_validity || osintScore / 5) >= 10 ? 'warning' : 'failed',
-            details: { status: 'Định dạng hợp lệ' },
-          },
-          google_maps: {
-            score: categoryScores.consistency || Math.round(osintScore / 5),
-            max_score: 20,
-            status: (categoryScores.consistency || osintScore / 5) >= 15 ? 'passed' : (categoryScores.consistency || osintScore / 5) >= 10 ? 'warning' : 'failed',
-            details: { status: 'Dữ liệu nhất quán' },
-          },
-          press_news: {
-            score: categoryScores.fraud_signs || Math.round(osintScore / 5),
-            max_score: 20,
-            status: (categoryScores.fraud_signs || osintScore / 5) >= 15 ? 'passed' : (categoryScores.fraud_signs || osintScore / 5) >= 10 ? 'warning' : 'failed',
-            details: { status: 'Không có dấu hiệu giả mạo' },
-          },
-          social_media: {
-            score: categoryScores.doc_specific || Math.round(osintScore / 5),
-            max_score: 20,
-            status: (categoryScores.doc_specific || osintScore / 5) >= 15 ? 'passed' : (categoryScores.doc_specific || osintScore / 5) >= 10 ? 'warning' : 'failed',
-            details: { status: 'Đánh giá theo loại tài liệu' },
-          },
-        },
-        business_age: {
-          months: 24,
-          status: osintScore >= 60 ? 'passed' : osintScore >= 40 ? 'warning' : 'rejected',
-        },
+        positive_signs: backendData.positive_signs || [],
+        
+        summary: backendData.analysis?.summary || '',
+        recommendation: backendData.analysis?.recommendation || 
+          (isCredible ? 'Tài liệu đáng tin cậy' : 'Cần xem xét thêm'),
+        doc_type: backendData.analysis?.doc_type || data.doc_type,
       };
 
       return {
