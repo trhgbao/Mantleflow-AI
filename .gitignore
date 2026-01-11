@@ -47,3 +47,11 @@ broadcast/
 .vscode/
 .idea/
 *.swp
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+.env
