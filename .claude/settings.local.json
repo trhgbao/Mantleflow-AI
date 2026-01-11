@@ -6,7 +6,11 @@
       "Bash(npm install:*)",
       "Bash(forge script:*)",
       "Bash(dir /s \"c:\\\\Hackathon\\\\ai-engine-resource\")",
-      "Bash(dir /s \"c:\\\\Hackathon\\\\ai-engine\")"
+      "Bash(dir /s \"c:\\\\Hackathon\\\\ai-engine\")",
+      "Bash(del \"c:\\\\Mantleflow-AI\\\\ai-engine\\\\app\\\\services\\\\gemini_service.py\")",
+      "Bash(Remove-Item \"c:\\\\Mantleflow-AI\\\\ai-engine\\\\app\\\\services\\\\gemini_service.py\" -Force)",
+      "Bash(pip install:*)",
+      "Bash(venv/Scripts/pip install:*)"
     ]
   }
 }

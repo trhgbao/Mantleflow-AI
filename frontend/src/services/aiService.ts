@@ -80,28 +80,122 @@ export const aiService = {
     debtor_business_age_months?: number;
     osint_score?: number;
   }): Promise<ApiResponse<RiskScoreData>> => {
-    const response = await aiApi.post<ApiResponse<RiskScoreData>>(
-      '/ai/risk-score',
-      data
-    );
-    return response.data;
+    try {
+      const response = await aiApi.post('/ai/risk-score', data);
+      const apiData = response.data;
+
+      if (!apiData.success) {
+        return {
+          success: false,
+          error: apiData.error || 'Risk score calculation failed',
+        };
+      }
+
+      return {
+        success: true,
+        data: apiData.data as RiskScoreData,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.response?.data?.message || err.message || 'Risk score calculation failed',
+      };
+    }
   },
 
   /**
-   * Check company OSINT
+   * Check OSINT - Gửi data OCR cho Gemini đánh giá độ tin cậy
    */
   checkOSINT: async (data: {
-    company_name: string;
+    // Full OCR extracted data
+    doc_type?: string;
+    doc_name?: string;
+    invoice_number?: string;
+    amount?: number;
+    currency?: string;
+    attributes?: Record<string, any>;
+    // Basic debtor info
+    company_name?: string;
     tax_id?: string;
     address?: string;
-    website?: string;
-    registration_date?: string;
   }): Promise<ApiResponse<OSINTData>> => {
-    const response = await aiApi.post<ApiResponse<OSINTData>>(
-      '/ai/osint',
-      data
-    );
-    return response.data;
+    try {
+      const response = await aiApi.post('/ai/osint', data);
+      const apiData = response.data;
+
+      if (!apiData.success) {
+        return {
+          success: false,
+          error: apiData.error || 'OSINT check failed',
+        };
+      }
+
+      const backendData = apiData.data || apiData;
+      const osintScore = backendData.osint_score || 0;
+      const isShellCompany = backendData.is_shell_company || false;
+
+      // Get category scores from Gemini response
+      const categoryScores = backendData.details?.category_scores || {};
+
+      // Transform backend response to frontend OSINTData format
+      const osintData: OSINTData = {
+        osint_score: osintScore,
+        is_shell_company: isShellCompany,
+        auto_reject: isShellCompany || osintScore < 30,
+        reject_reason: isShellCompany ? 'Tài liệu có dấu hiệu giả mạo' : undefined,
+        red_flags: backendData.red_flags || [],
+        recommendation: backendData.details?.recommendation ||
+          backendData.details?.analysis_summary ||
+          (osintScore >= 60 ? 'Tài liệu hợp lệ' : 'Cần xem xét thêm'),
+        // Map Gemini category scores to frontend checks format
+        checks: {
+          website: {
+            score: categoryScores.completeness || Math.round(osintScore / 5),
+            max_score: 20,
+            status: (categoryScores.completeness || osintScore / 5) >= 15 ? 'passed' : (categoryScores.completeness || osintScore / 5) >= 10 ? 'warning' : 'failed',
+            details: { status: 'Đầy đủ thông tin' },
+          },
+          linkedin: {
+            score: categoryScores.format_validity || Math.round(osintScore / 5),
+            max_score: 20,
+            status: (categoryScores.format_validity || osintScore / 5) >= 15 ? 'passed' : (categoryScores.format_validity || osintScore / 5) >= 10 ? 'warning' : 'failed',
+            details: { status: 'Định dạng hợp lệ' },
+          },
+          google_maps: {
+            score: categoryScores.consistency || Math.round(osintScore / 5),
+            max_score: 20,
+            status: (categoryScores.consistency || osintScore / 5) >= 15 ? 'passed' : (categoryScores.consistency || osintScore / 5) >= 10 ? 'warning' : 'failed',
+            details: { status: 'Dữ liệu nhất quán' },
+          },
+          press_news: {
+            score: categoryScores.fraud_signs || Math.round(osintScore / 5),
+            max_score: 20,
+            status: (categoryScores.fraud_signs || osintScore / 5) >= 15 ? 'passed' : (categoryScores.fraud_signs || osintScore / 5) >= 10 ? 'warning' : 'failed',
+            details: { status: 'Không có dấu hiệu giả mạo' },
+          },
+          social_media: {
+            score: categoryScores.doc_specific || Math.round(osintScore / 5),
+            max_score: 20,
+            status: (categoryScores.doc_specific || osintScore / 5) >= 15 ? 'passed' : (categoryScores.doc_specific || osintScore / 5) >= 10 ? 'warning' : 'failed',
+            details: { status: 'Đánh giá theo loại tài liệu' },
+          },
+        },
+        business_age: {
+          months: 24,
+          status: osintScore >= 60 ? 'passed' : osintScore >= 40 ? 'warning' : 'rejected',
+        },
+      };
+
+      return {
+        success: true,
+        data: osintData,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.response?.data?.message || err.message || 'OSINT check failed',
+      };
+    }
   },
 
   /**

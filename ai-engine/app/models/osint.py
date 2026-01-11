@@ -11,12 +11,19 @@ class OSINTCheckResult(BaseModel):
 
 
 class OSINTRequest(BaseModel):
-    """Request for OSINT check"""
-    company_name: str = Field(..., description="Company name to check")
+    """Request for OSINT check - accepts OCR extracted data for Gemini evaluation"""
+    # Basic info (backwards compatible)
+    company_name: Optional[str] = Field(None, description="Company name to check")
     tax_id: Optional[str] = Field(None, description="Tax ID / Business registration")
     address: Optional[str] = Field(None, description="Company address")
-    website: Optional[str] = Field(None, description="Company website URL")
-    registration_date: Optional[str] = Field(None, description="Business registration date YYYY-MM-DD")
+
+    # Full OCR data for Gemini evaluation
+    doc_type: Optional[str] = Field(None, description="Document type from OCR")
+    doc_name: Optional[str] = Field(None, description="Vietnamese document name")
+    invoice_number: Optional[str] = Field(None, description="Document ID/number")
+    amount: Optional[float] = Field(None, description="Monetary value")
+    currency: Optional[str] = Field("VND", description="Currency")
+    attributes: Optional[Dict[str, Any]] = Field(None, description="Document-specific attributes")
 
 
 class OSINTChecks(BaseModel):
@@ -50,4 +57,52 @@ class OSINTResponse(BaseModel):
     """Response from OSINT check"""
     success: bool
     data: Optional[OSINTData] = None
+    error: Optional[str] = None
+
+
+# === NEW: Gemini OSINT Evaluation Models ===
+
+class OCRDataForOSINT(BaseModel):
+    """OCR data structure for Gemini OSINT evaluation"""
+    doc_type: str = Field(..., description="Document type (LAND_TITLE, VEHICLE, SAVINGS, etc.)")
+    doc_name: Optional[str] = Field(None, description="Vietnamese document name")
+    invoiceNumber: Optional[str] = Field(None, description="Primary document ID")
+    amount: Optional[float] = Field(0, description="Monetary value or capital")
+    currency: Optional[str] = Field("VND", description="Currency")
+    debtor: Optional[Dict[str, Any]] = Field(default={}, description="Owner/Company info")
+    attributes: Optional[Dict[str, Any]] = Field(default={}, description="Document-specific attributes")
+    confidence: Optional[float] = Field(None, description="OCR confidence score")
+
+
+class GeminiOSINTCategoryScores(BaseModel):
+    """Category scores from Gemini evaluation"""
+    completeness: int = Field(..., ge=0, le=20, description="Information completeness score")
+    format_validity: int = Field(..., ge=0, le=20, description="Format validity score")
+    consistency: int = Field(..., ge=0, le=20, description="Data consistency score")
+    fraud_signs: int = Field(..., ge=0, le=20, description="Fraud signs score (higher = better)")
+    doc_specific: int = Field(..., ge=0, le=20, description="Document-specific evaluation score")
+
+
+class GeminiOSINTDetails(BaseModel):
+    """Detailed evaluation from Gemini"""
+    category_scores: Optional[GeminiOSINTCategoryScores] = None
+    recommendation: str = Field(..., description="Recommendation for accepting/rejecting document")
+    analysis_summary: str = Field(..., description="Summary of the analysis")
+    evaluated_by: str = Field(default="Gemini AI", description="Evaluator")
+    doc_type: str = Field(..., description="Document type evaluated")
+
+
+class GeminiOSINTResult(BaseModel):
+    """Result from Gemini OSINT evaluation"""
+    is_shell_company: bool = Field(..., description="Whether document appears fraudulent")
+    osint_score: int = Field(..., ge=0, le=100, description="Overall OSINT score")
+    red_flags: List[str] = Field(default=[], description="List of detected issues")
+    positive_signs: List[str] = Field(default=[], description="List of positive indicators")
+    details: GeminiOSINTDetails = Field(..., description="Detailed evaluation")
+
+
+class GeminiOSINTResponse(BaseModel):
+    """Response from Gemini OSINT evaluation"""
+    success: bool
+    data: Optional[GeminiOSINTResult] = None
     error: Optional[str] = None

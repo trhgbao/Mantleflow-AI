@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import requests
 import json
 import re
@@ -9,7 +9,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Key bạn cung cấp (hoặc lấy từ .env)
-MY_GOOGLE_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCN6x_B2lSx_ZBnKfJmYxChZ0xVi2fpfIQ")
+MY_GOOGLE_KEY = os.getenv("GEMINI_API_KEY")
+
+# Model name - dùng gemini-1.5-flash để tiết kiệm quota
+GEMINI_MODEL = "gemini-flash-latest"
 
 class GeminiService:
     """Service tương tác với Google Gemini API kết hợp OCR Space"""
@@ -17,13 +20,12 @@ class GeminiService:
     def __init__(self):
         self.api_key = MY_GOOGLE_KEY
         if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = genai.Client(api_key=self.api_key)
         else:
-            self.model = None
+            self.client = None
 
     def is_configured(self) -> bool:
-        return self.model is not None
+        return self.client is not None
 
     async def analyze_document(self, file_content: bytes, mime_type: str) -> dict:
         """
@@ -37,8 +39,8 @@ class GeminiService:
         # ---------------------------------------------------------
         # BƯỚC 1: GỌI OCR SPACE (Logic cũ của bạn yêu cầu giữ lại)
         # ---------------------------------------------------------
-        ocr_api_key = os.getenv("OCR_API_KEY", "helloworld")
-        
+        ocr_api_key = os.getenv("OCR_API_KEY")
+
         payload = {
             'apikey': ocr_api_key,
             'language': 'eng', # Dùng ENG để tránh lỗi E201, Gemini sẽ tự dịch
@@ -101,10 +103,14 @@ class GeminiService:
             {self._get_json_structure()}
             """
 
-            response = await self.model.generate_content_async([
-                prompt,
-                {"mime_type": mime_type, "data": image_data}
-            ])
+            # New google-genai API với async
+            response = await self.client.aio.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=[
+                    prompt,
+                    {"inline_data": {"mime_type": mime_type, "data": image_data}}
+                ]
+            )
 
             cleaned_json = self._clean_json_string(response.text)
             data = json.loads(cleaned_json)
@@ -144,9 +150,12 @@ class GeminiService:
         """
 
         try:
-            # Gọi Async Gemini
-            response = await self.model.generate_content_async(prompt)
-            
+            # Gọi Async Gemini với API mới
+            response = await self.client.aio.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt
+            )
+
             # Làm sạch JSON
             cleaned_json = self._clean_json_string(response.text)
             data = json.loads(cleaned_json)
@@ -276,3 +285,6 @@ OCRService = GeminiService
 # Wrapper function for API routes
 async def extract_invoice_data(file_content: bytes, mime_type: str):
     return await gemini_service.analyze_document(file_content, mime_type)
+
+# Alias for extract routes
+extract_document_data = extract_invoice_data
